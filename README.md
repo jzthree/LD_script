@@ -1,0 +1,1 @@
+This repository includes scripts for automating computation of linkage disequilibrium for all SNPs from 1000 genomes genotype data. To use it you need to install tabix v1.2.1+ and plink v1.90b3.39+ and make sure it is under $PATH.

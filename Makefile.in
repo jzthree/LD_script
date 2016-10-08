@@ -1,0 +1,49 @@
+#PWD=pwd
+#DIR=`basename $(PWD)`
+mirror=ftp://ftp.1000genomes.ebi.ac.uk/vol1
+ftpurl1=$(mirror)/ftp/release/20130502/ALL.chr
+ftpurl2=.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz
+POPULATIONS = AFR AMR EAS EUR SAS
+
+define make-tfam-tped
+  plinkformat.$1.tfam plinkformat.$1.tped: genotypes.vcf.gz
+	vcftools --gzvcf genotypes.vcf.gz --keep ../panel.$1 --plink-tped --out plinkformat.$1 ; 
+  tfam-tped:: plinkformat.$1.tfam plinkformat.$1.tped
+endef
+
+define make-fam-bed
+  plinkBEDformat_$1.bed plinkBEDformat_$1.fam: plinkformat.$1.tfam
+	python ../1000g_ped.py ../integrated_call_samples_v2.20130502.ALL.ped plinkformat.$1.tfam; \
+	plink --tfile plinkformat.$1 --make-bed --out plinkBEDformat_$1 --noweb --maf 0.002 --hwe 0.001;
+  fam-bed:: plinkBEDformat_$1.bed plinkBEDformat_$1.fam
+endef
+
+
+define make-ld
+  plinkoutput.$1.ld: plinkBEDformat_$1.bed
+	time plink --bfile plinkBEDformat_$1  --ld-window-kb 1000 --ld-window 99999 --ld-window-r2 0.25 --r2 in-phase dprime with-freqs --out plinkoutput.$1  ;
+  ld:: plinkoutput.$1.ld
+endef
+
+
+$(foreach pop,$(POPULATIONS),$(eval $(call make-tfam-tped,$(pop))))
+$(foreach pop,$(POPULATIONS),$(eval $(call make-fam-bed,$(pop))))
+$(foreach pop,$(POPULATIONS),$(eval $(call make-ld,$(pop))))
+
+plink : ld
+
+format : fam-bed
+
+download : genotypes.vcf.gz
+
+
+genotypes.vcf.gz :
+	wget -c $(ftpurl1)`basename $(CURDIR)`$(ftpurl2) -O genotypes.vcf.gz
+
+clean :
+	-$(RM) plinkformat* plinkBEDformat*  plinkoutput*
+
+realclean : clean
+	-$(RM) genotypes.vcf*
+
+all : download plink format
