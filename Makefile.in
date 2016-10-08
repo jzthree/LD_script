@@ -46,4 +46,4 @@ clean :
 realclean : clean
 	-$(RM) genotypes.vcf*
 
-all : download plink format
+all : download plink format tabix
