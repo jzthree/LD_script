@@ -18,7 +18,8 @@ setuppanel: panel.SAS
 tabix:
 	for i in $(POPULATIONS); \
 	do \
-		cat */plinkoutput.$$i.ld |sed 's/\ \+/\t/g'|sed 's/^\t//g'|fgrep -v CHR_A |bgzip -c > $$i.ld.gz ; tabix -b 2 -e 2 $$i.ld.gz; \
+		cat */plinkoutput.$$i.ld |sed 's/\ \+/\t/g'|sed 's/^\t//g'|fgrep -v CHR_A |bgzip -c > $$i.ld.forward.gz ; tabix -b 2 -e 2 $$i.ld.forward.gz; \
+		zcat $$i.ld.forward.gz | sort -k5,5 -k6,6n | bgzip -c > $$i.ld.backward.gz; tabix -s 5 -b 6 -e 6  $$i.ld.backward.gz; \
 	done
 
 $(SUBDIRS)::
